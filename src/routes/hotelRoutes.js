@@ -5,7 +5,7 @@ const {
   getAllHotels,
   updateSpecialPrice,
   updateHotel,
-  deleteHotel,
+  searchHotels,
 } = require("../controllers/hotelController");
 const { createHotelSchema, updateHotelSchema, specialPriceSchema, searchHotelSchema } = require("../validators/hotelValidators");
 const { verifyToken } = require("../middlewares/authentication");

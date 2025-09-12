@@ -1,3 +1,4 @@
+const { not } = require("joi");
 const Hotel = require("../models/hotels");
 const SpecialPrice = require("../models/specialPrices");
 const { normalizeDate } = require("../utils/date");
@@ -103,14 +104,15 @@ const updateSpecialPrice = async (req) => {
         { new: true, upsert: true }
       );
       return specialPrice;
-    } else if (startDate && endDate) { // if range is provided, update or create for each date in range
+    } else if (startDate && endDate) {
+      // if range is provided, update or create for each date in range
       const start = normalizeDate(startDate);
       const end = normalizeDate(endDate);
       if (start > end) {
         throw { statusCode: statusCodes.badRequest, message: "Start date must be before end date" };
       }
       const currentDate = new Date(start);
-      while(currentDate < end) {
+      while (currentDate < end) {
         const updateBody = { specialPricePerNight: price, specialPriceReason, modifiedBy: req.user.id };
         const newSpecialPriceEntry = {
           hotelId,
@@ -134,4 +136,114 @@ const updateSpecialPrice = async (req) => {
   }
 };
 
-module.exports = { createHotel, updateHotel, getAllHotels, updateSpecialPrice };
+const searchHotels = async (req) => {
+  try {
+    let { name, latitude, longitude, radius, fromDate, toDate, page, limit } = req.body;
+    page = parseInt(req.query.page) || 1;
+    limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    if (!radius) radius = 5000; // default radius 5km
+    const numberOfDays = fromDate && toDate ? Math.floor((normalizeDate(toDate) - normalizeDate(fromDate)) / (1000 * 60 * 60 * 24)) : 0;
+
+    const totalHotelsCount = await Hotel.countDocuments({
+      location: {
+        $geoWithin: {
+          $centerSphere: [[longitude, latitude], radius / 6378137] // radius in radians
+        }
+      },
+      ...(name ? { name: new RegExp(name, "i") } : {})
+    });
+
+    const hotels = await Hotel.aggregate([
+      {
+        $geoNear: {
+          near: { type: "Point", coordinates: [longitude, latitude] },
+          distanceField: "distance",
+          maxDistance: radius,
+          spherical: true,
+          query: {
+            ...(name ? { name: new RegExp(name, "i") } : {}),
+            roomsAvailable: { $gt: 0 }
+          }
+        }
+      },
+      {
+        $project: {
+          name: 1,
+          location: 1,
+          address: 1,
+          roomsAvailable: 1,
+          defaultPricePerNight: 1,
+          photos: 1,
+          amenities: 1,
+          distance: 1
+        }
+      },
+      {
+        $lookup: {
+          from: "specialprices",
+          let: { hotelId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [{ $eq: ["$hotelId", "$$hotelId"] }, { $gte: ["$date", new Date(normalizeDate(fromDate))] }, { $lte: ["$date", new Date(normalizeDate(toDate))] }]
+                }
+              }
+            }
+          ],
+          as: "specialPrices"
+        }
+      },
+      {
+        $addFields: {
+          specialPrices: { $ifNull: ["$specialPrices", []] },
+          specialPricesSum: { $sum: "$specialPrices.specialPricePerNight" },
+          specialPricesCount: { $size: "$specialPrices" }
+        }
+      },
+      {
+        $addFields: {
+          totalPrice: {
+            $cond: {
+              if: { $eq: ["$specialPricesCount", numberOfDays] },
+              then: "$specialPricesSum",
+              else: {
+                $add: ["$specialPricesSum", { $multiply: [{ $subtract: [numberOfDays, "$specialPricesCount"] }, "$defaultPricePerNight"] }]
+              }
+            }
+          }
+        }
+      },
+      { $sort: { distance: 1 } },
+      { $skip: skip },
+      { $limit: limit }
+    ]);
+
+    for (const hotel of hotels) {
+      delete hotel.specialPricesSum;
+      delete hotel.specialPricesCount;
+      const priceByDates = {};
+      for (i = 0; i < numberOfDays; i++) {
+        let date = new Date(normalizeDate(fromDate));
+        date.setDate(date.getDate() + i);
+        const specialPrice = hotel.specialPrices.find((sp) => normalizeDate(sp.date).getTime() === date.getTime());
+        const yyyyMMdd = new Intl.DateTimeFormat("en-CA").format(date);
+        if (specialPrice) {
+          priceByDates[yyyyMMdd] = specialPrice.specialPricePerNight;
+        } else {
+          priceByDates[yyyyMMdd] = hotel.defaultPricePerNight;
+        }
+      }
+      delete hotel.specialPrices;
+      hotel.priceByDates = priceByDates;
+    }
+    return { page, limit, totalHotelsCount, hotels };
+  } catch (error) {
+    console.error("Error searching hotels:", error);
+    throw { statusCode: statusCodes.internalServerError, message: "Failed to search hotels" };
+  }
+};
+
+module.exports = { createHotel, updateHotel, getAllHotels, updateSpecialPrice, searchHotels };

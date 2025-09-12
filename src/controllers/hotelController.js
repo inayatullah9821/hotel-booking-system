@@ -53,4 +53,17 @@ const updateSpecialPrice = async (req, res) => {
   }
 };
 
-module.exports = { createHotel, updateHotel, getAllHotels, updateSpecialPrice };
+const searchHotels = async (req, res) => {
+  try {
+    const hotels = await hotelService.searchHotels(req);
+    res.status(200).json({ message: "Hotels fetched successfully", data: hotels });
+  } catch (error) {
+    console.error("Error in searchHotels:", error);
+    res.status(error.statusCode || 500).json({
+      statusCode: error?.statusCode || statusCodes.internalServerError,
+      message: this.statusCode != statusCodes ? error.message : "Internal Server Error"
+    });
+  }
+};
+
+module.exports = { createHotel, updateHotel, getAllHotels, updateSpecialPrice, searchHotels };

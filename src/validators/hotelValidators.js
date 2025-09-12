@@ -48,15 +48,14 @@ const specialPriceSchema = joi
 const searchHotelSchema = joi
   .object({
     name: joi.string().min(1).max(100).optional(),
-    latitude: joi.number().min(-90).max(90).optional(),
-    longitude: joi.number().min(-180).max(180).optional(),
-    radius: joi.number().min(0).optional(), // in kilometers
-    fromDate: joi.date().optional(),
-    toDate: joi.date().optional()
+    latitude: joi.number().min(-90).max(90).required(),
+    longitude: joi.number().min(-180).max(180).required(),
+    radius: joi.number().min(0).optional(), // in meters
+    fromDate: joi.date().required(),
+    toDate: joi.date().required(),
+    page: joi.number().integer().min(1).optional(),
+    limit: joi.number().integer().min(1).max(100).optional()
   })
-  .with("latitude", "longitude")
-  .with("fromDate", "toDate")
-  .with("toDate", "fromDate")
   .custom((value, helpers) => {
     if (value.fromDate && value.toDate && value.fromDate > value.toDate) {
       return helpers.message('"fromDate" must be earlier than or equal to "toDate"');
