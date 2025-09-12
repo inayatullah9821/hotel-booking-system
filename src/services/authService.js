@@ -23,9 +23,9 @@ const registerUser = async (req) => {
     throw { statusCode: statusCodes.badRequest, message: "User with this email or mobile number already exists" };
   }
 
-  const newUser = User.create({ firstName, lastName, email, mobileNumber, password });
+  const newUser = await User.create({ firstName, lastName, email, mobileNumber, password });
   const token = generateToken(newUser);
-  return { token, user: { id: newUser._id, email: newUser.email, role: newUser.role } };
+  return { token, user: { id: newUser._id, email: newUser.email, mobileNumber: newUser.mobileNumber, role: newUser.role } };
 };
 
 module.exports = { loginUser, registerUser };
