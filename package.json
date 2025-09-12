@@ -13,6 +13,8 @@
   "type": "commonjs",
   "description": "A Hotel Booking System built with Node.js and Express.js",
   "dependencies": {
+    "axios": "^1.12.0",
+    "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "helmet": "^8.1.0",

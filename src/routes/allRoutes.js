@@ -1,6 +1,8 @@
 const router = require("express").Router();
-const adminRoutes = require("./adminRoutes");
+const authRoutes = require("./authRoutes");
+const hotelRoutes = require("./hotelRoutes");
 
-router.use("/admin", adminRoutes);
+router.use("/auth", authRoutes);
+router.use("/hotels", hotelRoutes);
 
 module.exports = router;
