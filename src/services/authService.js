@@ -1,5 +1,5 @@
 const User = require("../models/users");
-const { generateToken, verifyPassword } = require("../utils/authentication");
+const { generateToken, verifyPassword, hashPassword } = require("../utils/authentication");
 const { statusCodes } = require("../utils/errorConstants");
 
 const loginUser = async (req) => {
@@ -23,7 +23,8 @@ const registerUser = async (req) => {
     throw { statusCode: statusCodes.badRequest, message: "User with this email or mobile number already exists" };
   }
 
-  const newUser = await User.create({ firstName, lastName, email, mobileNumber, password });
+  const hashedPassword = await hashPassword(password);
+  const newUser = await User.create({ firstName, lastName, email, mobileNumber, password: hashedPassword, role: "user" });
   const token = generateToken(newUser);
   return { token, user: { id: newUser._id, email: newUser.email, mobileNumber: newUser.mobileNumber, role: newUser.role } };
 };

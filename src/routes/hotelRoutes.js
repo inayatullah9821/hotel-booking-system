@@ -49,9 +49,9 @@ const { verifyToken, isAdmin } = require("../middlewares/authentication");
  *   post:
  *     summary: Create a new hotel
  *     description: Add a new hotel with name, location coordinates, rooms available, default price, photos, and amenities.
- *     tags: [Hotels]
+ *     tags: [Admin Routes]
  *     security:
- *       - bearerAuth: []   # if JWT auth is required
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -124,6 +124,107 @@ const { verifyToken, isAdmin } = require("../middlewares/authentication");
  */
 router.post("/create", [verifyToken, isAdmin, validate(createHotelSchema)], createHotel);
 
+
+/**
+ * @swagger
+ * /hotels:
+ *   get:
+ *     summary: Get all hotels
+ *     description: Fetches a paginated list of all hotels available in the system.
+ *     tags:
+ *       - Admin Routes
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination.
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of hotels per page.
+ *     responses:
+ *       200:
+ *         description: Hotels fetched successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Hotels fetched successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                       example: 1
+ *                     limit:
+ *                       type: integer
+ *                       example: 10
+ *                     totalHotelsCount:
+ *                       type: integer
+ *                       example: 42
+ *                     hotels:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           _id:
+ *                             type: string
+ *                             example: "64f92d83a5b6a93e2c1e1c4a"
+ *                           name:
+ *                             type: string
+ *                             example: "Hotel Paradise"
+ *                           address:
+ *                             type: string
+ *                             example: "123 Beach Road, Mumbai"
+ *                           location:
+ *                             type: object
+ *                             properties:
+ *                               type:
+ *                                 type: string
+ *                                 example: "Point"
+ *                               coordinates:
+ *                                 type: array
+ *                                 items:
+ *                                   type: number
+ *                                 example: [72.8777, 19.0760]
+ *                           roomsAvailable:
+ *                             type: integer
+ *                             example: 15
+ *                           defaultPricePerNight:
+ *                             type: number
+ *                             example: 120.5
+ *                           amenities:
+ *                             type: array
+ *                             items:
+ *                               type: string
+ *                             example: ["Free WiFi", "Pool", "Gym"]
+ *                           photos:
+ *                             type: array
+ *                             items:
+ *                               type: string
+ *                               format: uri
+ *                             example: ["https://example.com/hotel1.jpg"]
+ *       500:
+ *         description: Failed to fetch hotels
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 500
+ *                 message:
+ *                   type: string
+ *                   example: Failed to fetch hotels
+ */
 router.get("/", [verifyToken, isAdmin], getAllHotels);
 
 /**
@@ -132,7 +233,7 @@ router.get("/", [verifyToken, isAdmin], getAllHotels);
  *   put:
  *     summary: Update an existing hotel
  *     description: Update hotel details like name, coordinates, rooms available, default price per night, photos, and amenities.
- *     tags: [Hotels]
+ *     tags: [Admin Routes]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -201,7 +302,75 @@ router.get("/", [verifyToken, isAdmin], getAllHotels);
  */
 router.put("/:id", [verifyToken, isAdmin, validate(updateHotelSchema)], updateHotel);
 
-// special price update
+/**
+ * @swagger
+ * /hotels/special-price:
+ *   put:
+ *     summary: Update or create a special price for a hotel
+ *     description: >
+ *       Updates or creates a special price for a hotel.  
+ *       - Either date **OR** (startDate and endDate) must be provided.  
+ *       - Special price must be greater than the hotel's default price per night.  
+ *       - For a date range, each date within the range will have the same special price applied.
+ *     tags:
+ *       - Admin Routes
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               hotelId:
+ *                 type: string
+ *                 example: 64e59a8c1f23f93b91b45c11
+ *               price:
+ *                 type: number
+ *                 example: 200
+ *               specialPriceReason:
+ *                 type: string
+ *                 example: "Festival season hiked rates"
+ *               date:
+ *                 type: string
+ *                 format: date
+ *                 example: "2025-09-20"
+ *               startDate:
+ *                 type: string
+ *                 format: date
+ *                 example: "2025-09-20"
+ *               endDate:
+ *                 type: string
+ *                 format: date
+ *                 example: "2025-09-25"
+ *             required:
+ *               - hotelId
+ *               - price
+ *               - specialPriceReason
+ *             oneOf:
+ *               - required: ["date"]
+ *               - required: ["startDate", "endDate"]
+ *     responses:
+ *       200:
+ *         description: Special price updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Special price updated successfully
+ *                 data:
+ *                   type: object
+ *       400:
+ *         description: Invalid request (e.g., price less than default or invalid dates)
+ *       404:
+ *         description: Hotel not found
+ *       500:
+ *         description: Internal Server Error
+ */
 router.post("/specialPrice/update", [verifyToken, isAdmin, validate(specialPriceSchema), updateSpecialPrice]);
 
 /**
@@ -209,7 +378,7 @@ router.post("/specialPrice/update", [verifyToken, isAdmin, validate(specialPrice
  * /hotels/search:
  *   post:
  *     summary: Search hotels by location, availability, and dates
- *     description: Search for hotels within a given radius from coordinates, filter by name and available rooms, and calculate total and per-day prices including special prices.
+ *     description: Search for hotels within a given radius from coordinates, filter by name and get calculated price for requested stay.
  *     tags: [Hotels]
  *     requestBody:
  *       required: true
@@ -220,7 +389,7 @@ router.post("/specialPrice/update", [verifyToken, isAdmin, validate(specialPrice
  *             properties:
  *               name:
  *                 type: string
- *                 description: Optional hotel name filter (case-insensitive)
+ *                 description: Optional hotel name filter
  *                 example: Holiday Inn
  *               latitude:
  *                 type: number
@@ -237,20 +406,20 @@ router.post("/specialPrice/update", [verifyToken, isAdmin, validate(specialPrice
  *               fromDate:
  *                 type: string
  *                 format: date
- *                 description: Check-in date
+ *                 description: check-in date
  *                 example: 2025-09-10
  *               toDate:
  *                 type: string
  *                 format: date
- *                 description: Check-out date
+ *                 description: check-out date
  *                 example: 2025-09-12
  *               page:
  *                 type: integer
- *                 description: Page number for pagination (default 1)
+ *                 description: Page number for pagination
  *                 example: 1
  *               limit:
  *                 type: integer
- *                 description: Number of hotels per page (default 10)
+ *                 description: Number of hotels per page
  *                 example: 10
  *             required:
  *               - latitude
@@ -313,7 +482,7 @@ router.post("/specialPrice/update", [verifyToken, isAdmin, validate(specialPrice
  *                         type: object
  *                         additionalProperties:
  *                           type: number
- *                           description: Price for that specific date (special price if exists, else default price)
+ *                           description: each price breakdown by date
  *       400:
  *         description: Bad request (invalid input)
  *       500:

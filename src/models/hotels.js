@@ -39,5 +39,6 @@ const hotelSchema = new mongoose.Schema(
 
 // Create geospatial index for location queries
 hotelSchema.index({ location: "2dsphere" });
+hotelSchema.index({ "location.coordinates": 1 }, { unique: true });
 
 module.exports = mongoose.model("Hotel", hotelSchema);

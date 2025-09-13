@@ -11,7 +11,7 @@ const createHotelSchema = joi.object({
   address: joi.string().max(200).optional(),
   roomsAvailable: joi.number().integer().min(0).required(),
   defaultPrice: joi.number().min(100).required(),
-  photos: joi.array().items(joi.string().uri()).min(1),
+  photos: joi.array().items(joi.string().uri()).min(1).required(),
   amenities: joi.array().items(joi.string().max(50)).optional()
 });
 

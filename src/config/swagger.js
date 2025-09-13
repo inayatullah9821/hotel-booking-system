@@ -9,8 +9,15 @@ const options = {
       version: "1.0.0",
       description: "API documentation for Hotel Booking System"
     },
-    servers: [{ url: `${process.env.HOST}/api` || "http://localhost:3000/api" }]
+    servers: [
+      {
+        url: process.env.HOST
+          ? `${process.env.HOST}/api` // If HOST env is set (like in production)
+          : "http://localhost:3000/api" // Default for local dev
+      }
+    ]
   },
+  
   apis: ["./src/routes/*.js"]
 };
 

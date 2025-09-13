@@ -8,9 +8,12 @@ const { validateCoordinates } = require("../utils/geoCode");
 const createHotel = async (req) => {
   try {
     const { name, coordinates, roomsAvailable, defaultPrice: defaultPricePerNight, photos, amenities } = req.body;
-    const existingHotel = await Hotel.findOne({ name });
+    const existingHotel = await Hotel.findOne({
+      name,
+      "location.coordinates": [coordinates.longitude, coordinates.latitude]
+    });
     if (existingHotel) {
-      throw { statusCode: statusCodes.badRequest, message: "Hotel with this name already exists" };
+      throw { statusCode: statusCodes.badRequest, message: "Hotel with same co ordinates already exists" };
     }
     const hotelData = {
       name,
@@ -73,9 +76,117 @@ const updateHotel = async (req) => {
   }
 };
 
+/**
+ * @swagger
+ * /hotels:
+ *   get:
+ *     summary: Get all hotels
+ *     description: Fetches a paginated list of all hotels available in the system.
+ *     tags:
+ *       - Hotels
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination.
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of hotels per page.
+ *     responses:
+ *       200:
+ *         description: Hotels fetched successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Hotels fetched successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                       example: 1
+ *                     limit:
+ *                       type: integer
+ *                       example: 10
+ *                     totalHotelsCount:
+ *                       type: integer
+ *                       example: 42
+ *                     hotels:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           _id:
+ *                             type: string
+ *                             example: "64f92d83a5b6a93e2c1e1c4a"
+ *                           name:
+ *                             type: string
+ *                             example: "Hotel Paradise"
+ *                           address:
+ *                             type: string
+ *                             example: "123 Beach Road, Mumbai"
+ *                           location:
+ *                             type: object
+ *                             properties:
+ *                               type:
+ *                                 type: string
+ *                                 example: "Point"
+ *                               coordinates:
+ *                                 type: array
+ *                                 items:
+ *                                   type: number
+ *                                 example: [72.8777, 19.0760]
+ *                           roomsAvailable:
+ *                             type: integer
+ *                             example: 15
+ *                           defaultPricePerNight:
+ *                             type: number
+ *                             example: 120.5
+ *                           amenities:
+ *                             type: array
+ *                             items:
+ *                               type: string
+ *                             example: ["Free WiFi", "Pool", "Gym"]
+ *                           photos:
+ *                             type: array
+ *                             items:
+ *                               type: string
+ *                               format: uri
+ *                             example: ["https://example.com/hotel1.jpg"]
+ *       500:
+ *         description: Failed to fetch hotels
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 500
+ *                 message:
+ *                   type: string
+ *                   example: Failed to fetch hotels
+ */
 const getAllHotels = async (req) => {
   try {
-    const hotels = await Hotel.find();
+    const page = parseInt(req.query?.page) || 1;
+    const limit = parseInt(req.query?.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const hotelCount = await Hotel.countDocuments();
+    if (hotelCount === 0) {
+      return { page, limit, totalHotelsCount: 0, hotels: [] };
+    }
+    const hotels = await Hotel.find().skip(skip).limit(limit);
     return hotels;
   } catch (error) {
     console.error("Error fetching hotels:", error);
@@ -153,7 +264,7 @@ const searchHotels = async (req) => {
     const totalHotelsCount = await Hotel.countDocuments({
       location: {
         $geoWithin: {
-          $centerSphere: [[longitude, latitude], radius / 6378137] // radius in radians
+          $centerSphere: [[Number(longitude), Number(latitude)], radius / 6378137] // radius in radians
         }
       },
       ...(name ? { name: new RegExp(name, "i") } : {}),
@@ -163,7 +274,7 @@ const searchHotels = async (req) => {
     const hotels = await Hotel.aggregate([
       {
         $geoNear: {
-          near: { type: "Point", coordinates: [longitude, latitude] },
+          near: { type: "Point", coordinates: [Number(longitude), Number(latitude)] },
           distanceField: "distance",
           maxDistance: radius,
           spherical: true,
