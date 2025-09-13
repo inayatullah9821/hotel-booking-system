@@ -44,6 +44,11 @@ const updateHotel = async (req) => {
     const { id } = req.params;
     const updateData = { ...req.body, modifiedBy: req.user.id };
 
+    if (defaultPrice) {
+      updateData.defaultPricePerNight = defaultPrice;
+      delete updateData.defaultPrice;
+    }
+
     if (updateData.coordinates) {
       const geoData = await validateCoordinates({ lat: updateData.coordinates.latitude, long: updateData.coordinates.longitude });
       if (!geoData.valid) {
@@ -152,7 +157,8 @@ const searchHotels = async (req) => {
           $centerSphere: [[longitude, latitude], radius / 6378137] // radius in radians
         }
       },
-      ...(name ? { name: new RegExp(name, "i") } : {})
+      ...(name ? { name: new RegExp(name, "i") } : {}),
+      roomsAvailable: { $gt: 0 }
     });
 
     const hotels = await Hotel.aggregate([
@@ -163,10 +169,12 @@ const searchHotels = async (req) => {
           maxDistance: radius,
           spherical: true,
           query: {
-            ...(name ? { name: new RegExp(name, "i") } : {}),
-            roomsAvailable: { $gt: 0 }
+            ...(name ? { name: new RegExp(name, "i") } : {})
           }
         }
+      },
+      {
+        $match: { roomsAvailable: { $gt: 0 } }
       },
       {
         $project: {

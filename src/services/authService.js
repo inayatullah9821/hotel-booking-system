@@ -10,7 +10,7 @@ const loginUser = async (req) => {
   }
   const isPasswordValid = await verifyPassword(password, user.password);
   if (!isPasswordValid) {
-    throw { statusCode: statusCodes.badRequest, message: "Invalid email or password" };
+    throw { statusCode: statusCodes.badRequest, message: "Invalid password" };
   }
   const token = generateToken(user);
   return { token, user: { id: user._id, email: user.email, role: user.role } };

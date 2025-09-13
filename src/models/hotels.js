@@ -27,7 +27,7 @@ const hotelSchema = new mongoose.Schema(
       }
     },
     address: { type: String },
-    roomsAvailable: { type: Number, required: true },
+    roomsAvailable: { type: Number, required: true, default: 0 },
     defaultPricePerNight: { type: Number, required: true },
     photos: [String], // array of URLs or file paths
     amenities: [String],
