@@ -113,11 +113,11 @@ const updateSpecialPrice = async (req) => {
       // if range is provided, update or create for each date in range
       const start = normalizeDate(startDate);
       const end = normalizeDate(endDate);
-      if (start > end) {
+      if (new Date(start) > new Date(end)) {
         throw { statusCode: statusCodes.badRequest, message: "Start date must be before end date" };
       }
       const currentDate = new Date(start);
-      while (currentDate < end) {
+      while (new Date(currentDate) <= new Date(end)) {
         const updateBody = { specialPricePerNight: price, specialPriceReason, modifiedBy: req.user.id };
         const newSpecialPriceEntry = {
           hotelId,
@@ -131,8 +131,7 @@ const updateSpecialPrice = async (req) => {
           { $set: updateBody, $setOnInsert: newSpecialPriceEntry },
           { new: true, upsert: true }
         );
-        currentDate.setDate(start.getDate() + 1);
-        return true;
+        currentDate.setDate(currentDate.getDate() + 1);
       }
     }
   } catch (error) {
@@ -196,7 +195,7 @@ const searchHotels = async (req) => {
             {
               $match: {
                 $expr: {
-                  $and: [{ $eq: ["$hotelId", "$$hotelId"] }, { $gte: ["$date", new Date(normalizeDate(fromDate))] }, { $lte: ["$date", new Date(normalizeDate(toDate))] }]
+                  $and: [{ $eq: ["$hotelId", "$$hotelId"] }, { $gte: ["$date", new Date(normalizeDate(fromDate))] }, { $lt: ["$date", new Date(normalizeDate(toDate))] }]
                 }
               }
             }

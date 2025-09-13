@@ -45,7 +45,7 @@ const { verifyToken, isAdmin } = require("../middlewares/authentication");
 
 /**
  * @swagger
- * /hotels:
+ * /hotels/create:
  *   post:
  *     summary: Create a new hotel
  *     description: Add a new hotel with name, location coordinates, rooms available, default price, photos, and amenities.
