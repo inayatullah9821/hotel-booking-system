@@ -47,8 +47,8 @@ const updateHotel = async (req) => {
     const { id } = req.params;
     const updateData = { ...req.body, modifiedBy: req.user.id };
 
-    if (defaultPrice) {
-      updateData.defaultPricePerNight = defaultPrice;
+    if (updateData.defaultPrice) {
+      updateData.defaultPricePerNight = updateData.defaultPrice;
       delete updateData.defaultPrice;
     }
 
@@ -76,106 +76,6 @@ const updateHotel = async (req) => {
   }
 };
 
-/**
- * @swagger
- * /hotels:
- *   get:
- *     summary: Get all hotels
- *     description: Fetches a paginated list of all hotels available in the system.
- *     tags:
- *       - Hotels
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           default: 1
- *         description: Page number for pagination.
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 10
- *         description: Number of hotels per page.
- *     responses:
- *       200:
- *         description: Hotels fetched successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Hotels fetched successfully
- *                 data:
- *                   type: object
- *                   properties:
- *                     page:
- *                       type: integer
- *                       example: 1
- *                     limit:
- *                       type: integer
- *                       example: 10
- *                     totalHotelsCount:
- *                       type: integer
- *                       example: 42
- *                     hotels:
- *                       type: array
- *                       items:
- *                         type: object
- *                         properties:
- *                           _id:
- *                             type: string
- *                             example: "64f92d83a5b6a93e2c1e1c4a"
- *                           name:
- *                             type: string
- *                             example: "Hotel Paradise"
- *                           address:
- *                             type: string
- *                             example: "123 Beach Road, Mumbai"
- *                           location:
- *                             type: object
- *                             properties:
- *                               type:
- *                                 type: string
- *                                 example: "Point"
- *                               coordinates:
- *                                 type: array
- *                                 items:
- *                                   type: number
- *                                 example: [72.8777, 19.0760]
- *                           roomsAvailable:
- *                             type: integer
- *                             example: 15
- *                           defaultPricePerNight:
- *                             type: number
- *                             example: 120.5
- *                           amenities:
- *                             type: array
- *                             items:
- *                               type: string
- *                             example: ["Free WiFi", "Pool", "Gym"]
- *                           photos:
- *                             type: array
- *                             items:
- *                               type: string
- *                               format: uri
- *                             example: ["https://example.com/hotel1.jpg"]
- *       500:
- *         description: Failed to fetch hotels
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 statusCode:
- *                   type: integer
- *                   example: 500
- *                 message:
- *                   type: string
- *                   example: Failed to fetch hotels
- */
 const getAllHotels = async (req) => {
   try {
     const page = parseInt(req.query?.page) || 1;
