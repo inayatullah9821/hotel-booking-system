@@ -1,4 +1,4 @@
-# 🏨 Hotel Booking System (Node.js + MongoDB)
+#  Hotel Booking System (Node.js + MongoDB)
 
 A headless API for managing hotels, pricing, and bookings with support for special day pricing.  
 Built using **Node.js**, **Express**, **MongoDB**, and **GeoJSON** for location-based hotel search.
@@ -11,7 +11,7 @@ Swagger Docs: [https://hotel-booking-system-odqd.onrender.com/api-docs](https://
 ## ⚙️ Technologies Used
 - **Node.js** (Express.js framework)
 - **MongoDB** with **Mongoose ODM**
-- **GeoSpatial Queries** (`$geoWithin`, `$near`) for real coordinate-based hotel search
+- **GeoCoding** for real coordinate-based hotel search/creation - reverse co ordinate checking
 - **Swagger** (API documentation & testing)
 - **Postman** (optional testing)
 
@@ -28,9 +28,17 @@ cd hotel-booking-system
 ```bash
 npm install
 ```
-3️⃣ Start the server
-```bash
-npm run start
+3️⃣ Setup environment variables
+Create a .env file in the root directory:
+```
+PORT=5000
+MONGO_URI=mongodb://localhost:27017
+JWT_SECRET=somesecreat
+JWT_EXPIRE=1d
+SWAGGER_URL=/api-docs
+DEFAULT_ADMIN_EMAIL=superadmin@schbang.com
+ADMIN_PASSWORD=superAdmin@321
+GEOCODE_API_KEY=68c3f842c3267988477712hgnc...
 ```
 4️⃣ Access API
 

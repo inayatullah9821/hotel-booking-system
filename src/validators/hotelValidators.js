@@ -37,9 +37,9 @@ const specialPriceSchema = joi
     hotelId: joi.string().hex().length(24).required(),
     price: joi.number().min(0).required(),
     specialPriceReason: joi.string().max(200).required(),
-    date: joi.date().min("now").label("Past date are not allowed"),
-    startDate: joi.date().min("now").label("Past date are not allowed"),
-    endDate: joi.date().min("now").label("Past date are not allowed")
+    date: joi.date().min("now").label("date"),
+    startDate: joi.date().min("now").label("startDate"),
+    endDate: joi.date().min("now").label("endDate")
   })
   .xor("date", "startDate")
   .with("startDate", "endDate")
